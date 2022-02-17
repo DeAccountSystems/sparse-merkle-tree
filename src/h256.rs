@@ -26,8 +26,23 @@ impl H256 {
 
     #[inline]
     pub fn set_bit(&mut self, i: u8) {
+        // 0 = 1 / 8
+        // 1 = 8 / 8
+        // 2 = 16 / 8
+        // ...
+        // 32 = 256 / 8
         let byte_pos = i / BYTE_SIZE;
+        // 0 = 0 % 8
+        // 1 = 1 % 8
+        // 2 = 2 % 8
+        // ...
+        // 0 = 32 % 8
         let bit_pos = i % BYTE_SIZE;
+        // 0b00000001 = 0b00000001 << 1
+        // 0b00000010 = 0b00000001 << 2
+        // 0b00000100 = 0b00000001 << 3
+        // ...
+        // 0b00000000 = 0b00000001 << 8
         self.0[byte_pos as usize] |= 1 << bit_pos as u8;
     }
 
@@ -72,13 +87,28 @@ impl H256 {
     pub fn copy_bits(&self, start: u8) -> Self {
         let mut target = H256::zero();
 
+        // 0 = 1 / 8
+        // 1 = 8 / 8
+        // 2 = 16 / 8
+        // ...
+        // 32 = 256 / 8
         let start_byte = (start / BYTE_SIZE) as usize;
         // copy bytes
         target.0[start_byte..].copy_from_slice(&self.0[start_byte..]);
 
         // reset remain bytes
+        // 0 = 0 % 8
+        // 1 = 1 % 8
+        // 2 = 2 % 8
+        // ...
+        // 0 = 32 % 8
         let remain = start % BYTE_SIZE;
         if remain > 0 {
+            // 0b11111110 = 0b11111111 << 1
+            // 0b11111100 = 0b11111111 << 2
+            // 0b11111000 = 0b11111111 << 3
+            // ...
+            // 0b00000000 = 0b11111111 << 8
             target.0[start_byte] &= 0b11111111 << remain
         }
 

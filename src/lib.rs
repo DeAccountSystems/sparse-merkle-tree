@@ -63,6 +63,7 @@
 
 pub mod blake2b;
 pub mod ckb_smt;
+pub mod ffi;
 pub mod default_store;
 pub mod error;
 pub mod h256;
