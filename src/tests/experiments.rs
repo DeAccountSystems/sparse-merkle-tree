@@ -99,6 +99,46 @@ fn insert_four_leaf() {
 }
 
 #[test]
+fn merkle_proof_00() {
+    let mut tree = SMT::default();
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+    let key: H256 = H256::from(hex_to_hash("0100000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("11ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+    let key: H256 = H256::from(hex_to_hash("0300000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("33ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    tree.merkle_proof(vec![key]);
+
+    // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
+}
+
+#[test]
+fn merkle_proof_03() {
+    let mut tree = SMT::default();
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+    let key: H256 = H256::from(hex_to_hash("0100000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("11ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+    let key: H256 = H256::from(hex_to_hash("0300000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("33ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    tree.merkle_proof(vec![key]);
+
+    // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
+}
+
+#[test]
 fn gen_big_tree() {
     let mut tree = SMT::default();
     // 100 -> 302

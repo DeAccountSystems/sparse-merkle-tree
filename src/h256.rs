@@ -65,8 +65,8 @@ impl H256 {
 
     #[inline]
     pub fn is_right(&self, height: u8) -> bool {
-        println!("{:width$}=== H256::is_right({}) ===", " ", self, width=8);
-        println!("{:width$}result: {}", " ", self.get_bit(height), width=8);
+        // println!("{:width$}=== H256::is_right({}) ===", " ", self, width=8);
+        // println!("{:width$}result: {}", " ", self.get_bit(height), width=8);
 
         self.get_bit(height)
     }

@@ -3,6 +3,7 @@ use core::cmp::Ordering;
 use core::marker::PhantomData;
 use std::fmt;
 use std::fmt::Display;
+use crate::print::print_slice;
 
 /// The branch key
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -257,66 +258,109 @@ impl<H: Hasher + Default, V: Value + Display, S: Store<V>> SparseMerkleTree<H, V
 
     /// Generate merkle proof
     pub fn merkle_proof(&self, mut keys: Vec<H256>) -> Result<MerkleProof> {
+        println!("SparseMerkleTree::merkle_proof");
+        println!("{:width$}keys:", " ", width=2);
+        print_slice(&keys, 1);
         if keys.is_empty() {
             return Err(Error::EmptyKeys);
         }
 
         // sort keys
         keys.sort_unstable();
+        println!("{:width$}keys sorted:", " ", width=2);
+        print_slice(&keys, 1);
 
+        println!("  === for current_key in &keys {{ ===");
         // Collect leaf bitmaps
         let mut leaves_bitmap: Vec<H256> = Default::default();
         for current_key in &keys {
             let mut bitmap = H256::zero();
+            println!("    === for height in 0..=core::u8::MAX {{ ===");
             for height in 0..=core::u8::MAX {
                 let parent_key = current_key.parent_path(height);
                 let parent_branch_key = BranchKey::new(height, parent_key);
+
+                println_if!(height < 5, "{:width$}parent_key:{}", " ", parent_key, width=6);
+                println_if!(height < 5, "{:width$}parent_branch_key:{}", " ", parent_branch_key, width=6);
+
                 if let Some(parent_branch) = self.store.get_branch(&parent_branch_key)? {
                     let sibling = if current_key.is_right(height) {
+                        println_if!(height <= 5, "{:width$}sibling is left, current_key is right", " ", width=6);
                         parent_branch.left
                     } else {
+                        println_if!(height <= 5, "{:width$}current_key is left, sibling is right", " ", width=6);
                         parent_branch.right
                     };
                     if !sibling.is_zero() {
                         bitmap.set_bit(height);
+                        println_if!(height <= 5, "{:width$}sibling is not zero, bitmap.set_bit to {}", " ", bitmap, width=6);
                     }
                 } else {
                     // The key is not in the tree (support non-inclusion proof)
                 }
             }
+            println!("    }}");
             leaves_bitmap.push(bitmap);
         }
+        println!("  }}");
+
+        println!("{:width$}leaves_bitmap:", " ", width=2);
+        print_slice(&leaves_bitmap, 1);
 
         let mut proof: Vec<MergeValue> = Default::default();
         let mut stack_fork_height = [0u8; MAX_STACK_SIZE]; // store fork height
         let mut stack_top = 0;
         let mut leaf_index = 0;
+        println!("  === while leaf_index < keys.len() {{ ===");
         while leaf_index < keys.len() {
+            println!("{:width$}stack_fork_height = {:?}", " ", stack_fork_height, width=4);
+            println!("{:width$}stack_top = {}", " ", stack_top, width=4);
+            println!("{:width$}leaf_index = {}", " ", leaf_index, width=4);
+
             let leaf_key = keys[leaf_index];
+            println!("{:width$}leaf_key = {}", " ", leaf_key, width=4);
+
             let fork_height = if leaf_index + 1 < keys.len() {
                 leaf_key.fork_height(&keys[leaf_index + 1])
             } else {
                 core::u8::MAX
             };
+            println!("{:width$}fork_height = {}", " ", fork_height, width=4);
+
+            println!("    === for height in 0..=fork_height {{ ===");
             for height in 0..=fork_height {
                 if height == fork_height && leaf_index + 1 < keys.len() {
                     // If it's not final round, we don't need to merge to root (height=255)
                     break;
                 }
+
                 let parent_key = leaf_key.parent_path(height);
                 let is_right = leaf_key.is_right(height);
 
+                println_if!(height <= 5, "{:width$}parent_key = {}", " ", parent_key, width=4);
+                println_if!(height <= 5, "{:width$}is_right = {}", " ", is_right, width=4);
+
                 // has non-zero sibling
                 if stack_top > 0 && stack_fork_height[stack_top - 1] == height {
+                    println!("{:width$}stack_top > 0 && stack_fork_height[stack_top - 1] == height", " ", width=4);
                     stack_top -= 1;
+                    println!("{:width$}stack_top = {}", " ", stack_top, width=4);
                 } else if leaves_bitmap[leaf_index].get_bit(height) {
+                    println!("{:width$}leaves_bitmap[leaf_index].get_bit(height)", " ", width=4);
+
                     let parent_branch_key = BranchKey::new(height, parent_key);
+                    println!("{:width$}parent_branch_key = {}", " ", parent_branch_key, width=4);
+
                     if let Some(parent_branch) = self.store.get_branch(&parent_branch_key)? {
                         let sibling = if is_right {
+                            println!("{:width$}leaf_key is right, get left sibling", " ", width=4);
                             parent_branch.left
                         } else {
+                            println!("{:width$}leaf_key is left, get right sibling", " ", width=4);
                             parent_branch.right
                         };
+
+                        println!("{:width$}sibling = {}", " ", sibling, width=4);
                         if !sibling.is_zero() {
                             proof.push(sibling);
                         } else {
@@ -327,11 +371,21 @@ impl<H: Hasher + Default, V: Value + Display, S: Store<V>> SparseMerkleTree<H, V
                     }
                 }
             }
+            println!("    }}");
+
             debug_assert!(stack_top < MAX_STACK_SIZE);
             stack_fork_height[stack_top] = fork_height;
             stack_top += 1;
             leaf_index += 1;
         }
+        println!("  }}");
+
+
+        println!("{:width$}final leaves_bitmap:", " ", width=2);
+        print_slice(&leaves_bitmap, 1);
+        println!("{:width$}final proof:", " ", width=2);
+        print_slice(&proof, 1);
+
         assert_eq!(stack_top, 1);
         Ok(MerkleProof::new(leaves_bitmap, proof))
     }
