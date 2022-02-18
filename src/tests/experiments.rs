@@ -1,10 +1,7 @@
 use crate::*;
 use crate::{
-    blake2b::Blake2bHasher, default_store::DefaultStore, error::Error, merge::MergeValue,
-    MerkleProof, SparseMerkleTree,
+    blake2b::Blake2bHasher, default_store::DefaultStore, SparseMerkleTree,
 };
-use proptest::prelude::*;
-use rand::prelude::{Rng, SliceRandom};
 
 type SMT = SparseMerkleTree<Blake2bHasher, H256, DefaultStore<H256>>;
 
@@ -16,6 +13,90 @@ fn blake2b_256(data: &[u8]) -> [u8; 32] {
     result
 }
 
+fn hex_to_hash(input: &str) -> [u8; 32] {
+    let mut ret = [0u8; 32];
+    let data = hex::decode(input).expect("Invalid hex");
+    ret.copy_from_slice(&data);
+
+    ret
+}
+
+#[test]
+fn sort_leaves() {
+    let mut leaves = vec![
+        H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000001")),
+        H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000002")),
+        H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000003")),
+        // ...
+        H256::from(hex_to_hash("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd")),
+        H256::from(hex_to_hash("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe")),
+        H256::from(hex_to_hash("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")),
+    ];
+
+    leaves.sort_by_key(|a| a.clone());
+
+    for leaf in leaves {
+        println!("{}", leaf);
+    }
+}
+
+#[test]
+fn insert_one_leaf() {
+    let mut tree = SMT::default();
+    tree.root();
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    tree.root();
+
+    // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
+}
+
+#[test]
+fn insert_two_leaf() {
+    let mut tree = SMT::default();
+    tree.root();
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    let key: H256 = H256::from(hex_to_hash("0100000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("11ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    tree.root();
+
+    // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
+}
+
+#[test]
+fn insert_four_leaf() {
+    let mut tree = SMT::default();
+    tree.root();
+
+    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    let key: H256 = H256::from(hex_to_hash("0100000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("11ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    let key: H256 = H256::from(hex_to_hash("0200000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    let key: H256 = H256::from(hex_to_hash("0300000000000000000000000000000000000000000000000000000000000000"));
+    let value: H256 = H256::from(hex_to_hash("33ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key, value);
+
+    tree.root();
+
+    // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
+}
 
 #[test]
 fn gen_big_tree() {
@@ -35,6 +116,7 @@ fn gen_big_tree() {
     let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
     println!("root 1 = {:?}", tree.root());
     println!("proof 1 = {:?}", proof.merkle_path());
+    println!("proof_bin 1 = {:?}", proof.compile(vec![(new_key.clone(), H256::zero())]));
     println!("leaf 1 = {:?}", tree.get(&new_key));
     // let compiled_proof = proof.compile(vec![(new_key.clone().into(), H256::zero())]).unwrap();
     // file.write_all(format!("New merkle proof 1: {:?}\n", compiled_proof).as_bytes());
@@ -46,9 +128,10 @@ fn gen_big_tree() {
     let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
     println!("root 2 = {:?}", tree.root());
     println!("proof 2 = {:?}", proof.merkle_path());
+    println!("proof_bin 2 = {:?}", proof.compile(vec![(new_key.clone(), new_value.clone())]));
     println!("leaf 2 = {:?}", tree.get(&new_key));
 
-    println!("verify 2 = {:?}", proof.verify(tree.root(), vec![(new_key.clone(), new_value)]));
+    // println!("verify 2 = {:?}", proof.verify(tree.root(), vec![(new_key.clone(), new_value)]));
     // let compiled_proof = proof.compile(vec![leaf.clone()]).unwrap();
     // file.write_all(format!("New merkle proof 2: {:?}\n", compiled_proof).as_bytes());
 }

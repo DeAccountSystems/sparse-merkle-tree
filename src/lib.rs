@@ -73,6 +73,7 @@ pub mod merkle_proof;
 mod tests;
 pub mod traits;
 pub mod tree;
+mod print;
 
 pub use ckb_smt::{SMTBuilder, SMT};
 pub use h256::H256;

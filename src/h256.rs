@@ -1,4 +1,5 @@
 use core::cmp::Ordering;
+use std::fmt;
 
 /// Represent 256 bits
 #[derive(Eq, PartialEq, Debug, Default, Hash, Clone, Copy)]
@@ -6,6 +7,13 @@ pub struct H256([u8; 32]);
 
 const ZERO: H256 = H256([0u8; 32]);
 const BYTE_SIZE: u8 = 8;
+
+impl fmt::Display for H256 {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
 
 impl H256 {
     pub const fn zero() -> Self {
@@ -18,32 +26,34 @@ impl H256 {
 
     #[inline]
     pub fn get_bit(&self, i: u8) -> bool {
+
         let byte_pos = i / BYTE_SIZE;
         let bit_pos = i % BYTE_SIZE;
         let bit = self.0[byte_pos as usize] >> bit_pos & 1;
+
+        // println!("{:width$}=== H256::get_bit({}) ===", " ", self, width=8);
+        // println!("{:width$}i = {}", " ", i, width=8);
+        // println!("{:width$}byte_pos = {}", " ", byte_pos, width=8);
+        // println!("{:width$}bit_pos = {}", " ", bit_pos, width=8);
+        // println!("{:width$}self.0[byte_pos as usize] = {}", " ", self.0[byte_pos as usize], width=8);
+        // println!("{:width$}self.0[byte_pos as usize]>> bit_pos = {}", " ", self.0[byte_pos as usize] >> bit_pos, width=8);
+        // println!("{:width$}self.0[byte_pos as usize] >> bit_pos = {}", " ", self.0[byte_pos as usize] >> bit_pos & 1, width=8);
+
         bit != 0
     }
 
     #[inline]
     pub fn set_bit(&mut self, i: u8) {
-        // 0 = 1 / 8
-        // 1 = 8 / 8
-        // 2 = 16 / 8
-        // ...
-        // 32 = 256 / 8
         let byte_pos = i / BYTE_SIZE;
-        // 0 = 0 % 8
-        // 1 = 1 % 8
-        // 2 = 2 % 8
-        // ...
-        // 0 = 32 % 8
         let bit_pos = i % BYTE_SIZE;
-        // 0b00000001 = 0b00000001 << 1
-        // 0b00000010 = 0b00000001 << 2
-        // 0b00000100 = 0b00000001 << 3
-        // ...
-        // 0b00000000 = 0b00000001 << 8
         self.0[byte_pos as usize] |= 1 << bit_pos as u8;
+
+        // println!("{:width$}=== H256::set_bit({}) ===", " ", self, width=8);
+        // println!("{:width$}i = {}", " ", i, width=8);
+        // println!("{:width$}byte_pos = {}", " ", byte_pos, width=8);
+        // println!("{:width$}bit_pos = {}", " ", bit_pos, width=8);
+        // println!("{:width$}self.0[byte_pos as usize] = {}", " ", self.0[byte_pos as usize], width=8);
+        // println!("{:width$}self.0[byte_pos as usize] | 1 << bit_pos as u8 = {}", " ", self.0[byte_pos as usize] | 1 << bit_pos as u8, width=8);
     }
 
     #[inline]
@@ -55,6 +65,9 @@ impl H256 {
 
     #[inline]
     pub fn is_right(&self, height: u8) -> bool {
+        println!("{:width$}=== H256::is_right({}) ===", " ", self, width=8);
+        println!("{:width$}result: {}", " ", self.get_bit(height), width=8);
+
         self.get_bit(height)
     }
 

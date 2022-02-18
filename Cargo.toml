@@ -9,10 +9,10 @@ description = "Sparse merkle tree implement in rust"
 exclude = ["/fixtures", "/proptest-regressions"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-name = "_ckb_smt"           # The name of the target.
+#[lib]
+#name = "_ckb_smt"           # The name of the target.
 #path = "src/ffi.rs"    # The source file of the target.
-crate-type = ["cdylib"]
+#crate-type = ["staticlib"]
 
 [features]
 default = ["std"]
@@ -21,6 +21,7 @@ std = []
 [dependencies]
 cfg-if = "0.1"
 blake2b-rs = "0.2"
+hex = "0.4.3"
 
 [dev-dependencies]
 proptest = "0.9"

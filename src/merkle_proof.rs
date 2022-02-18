@@ -69,8 +69,10 @@ impl MerkleProof {
         let mut leaf_index = 0;
         let mut merkle_path_index = 0;
         while leaf_index < leaves.len() {
+            // 这里的 _value 没有使用到
             let (leaf_key, _value) = leaves[leaf_index];
             let fork_height = if leaf_index + 1 < leaves.len() {
+                // 这里就是以 leaves 的 key 来计算 fork_height
                 leaf_key.fork_height(&leaves[leaf_index + 1].0)
             } else {
                 core::u8::MAX
@@ -113,6 +115,7 @@ impl MerkleProof {
                         }
                         (None, None)
                     };
+                // 将 op_code 放入 proof 中
                 if let Some(op_code) = op_code_opt {
                     if zero_count > 0 {
                         let n = if zero_count == 256 {
@@ -126,6 +129,7 @@ impl MerkleProof {
                     }
                     proof.push(op_code);
                 }
+                // 将 sibling_data 放入 proof 中
                 if let Some(data) = sibling_data_opt {
                     proof.extend(&data);
                 }

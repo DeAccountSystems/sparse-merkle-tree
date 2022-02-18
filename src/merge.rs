@@ -1,3 +1,4 @@
+use std::fmt;
 use crate::h256::H256;
 use crate::traits::Hasher;
 
@@ -12,6 +13,22 @@ pub enum MergeValue {
         zero_bits: H256,
         zero_count: u8,
     },
+}
+
+impl fmt::Display for MergeValue {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MergeValue::Value(v) => write!(f, "MergeValue::Value {{ {} }}", v),
+            MergeValue::MergeWithZero {
+                base_node,
+                zero_bits,
+                zero_count,
+            } => {
+                write!(f, "MergeValue::MergeWithZero {{ base_node: {}, zero_bits: {}, zero_count: {} }}", base_node, zero_bits, zero_count)
+            }
+        }
+    }
 }
 
 impl MergeValue {

@@ -1,19 +1,21 @@
-use crate::{
-    error::{Error, Result},
-    merge::{merge, MergeValue},
-    merkle_proof::MerkleProof,
-    traits::{Hasher, Store, Value},
-    vec::Vec,
-    H256, MAX_STACK_SIZE,
-};
+use crate::{error::{Error, Result}, merge::{merge, MergeValue}, merkle_proof::MerkleProof, traits::{Hasher, Store, Value}, vec::Vec, H256, MAX_STACK_SIZE, println_if};
 use core::cmp::Ordering;
 use core::marker::PhantomData;
+use std::fmt;
+use std::fmt::Display;
 
 /// The branch key
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BranchKey {
     pub height: u8,
     pub node_key: H256,
+}
+
+impl fmt::Display for BranchKey {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "BranchKey {{ height: {}, node_key: {} }}", self.height, self.node_key)
+    }
 }
 
 impl BranchKey {
@@ -51,7 +53,7 @@ pub struct SparseMerkleTree<H, V, S> {
     phantom: PhantomData<(H, V)>,
 }
 
-impl<H: Hasher + Default, V: Value, S: Store<V>> SparseMerkleTree<H, V, S> {
+impl<H: Hasher + Default, V: Value + Display, S: Store<V>> SparseMerkleTree<H, V, S> {
     /// Build a merkle tree from root and store
     pub fn new(root: H256, store: S) -> SparseMerkleTree<H, V, S> {
         SparseMerkleTree {
@@ -63,6 +65,8 @@ impl<H: Hasher + Default, V: Value, S: Store<V>> SparseMerkleTree<H, V, S> {
 
     /// Merkle root
     pub fn root(&self) -> &H256 {
+        println!("SparseMerkleTree::root");
+        println!("{:width$}root = {}", " ", self.root, width=2);
         &self.root
     }
 
@@ -89,6 +93,10 @@ impl<H: Hasher + Default, V: Value, S: Store<V>> SparseMerkleTree<H, V, S> {
     /// Update a leaf, return new merkle root
     /// set to zero value to delete a key
     pub fn update(&mut self, key: H256, value: V) -> Result<&H256> {
+        println!("SparseMerkleTree::update");
+        println!("{:width$}key = {}", " ", key, width=2);
+        println!("{:width$}value = {}", " ", value, width=2);
+
         // compute and store new leaf
         let node = MergeValue::from_h256(value.to_h256());
         // notice when value is zero the leaf is deleted, so we do not need to store it
@@ -97,27 +105,46 @@ impl<H: Hasher + Default, V: Value, S: Store<V>> SparseMerkleTree<H, V, S> {
         } else {
             self.store.remove_leaf(&key)?;
         }
+        println!("{:width$}node = {}", " ", node, width=2);
 
         // recompute the tree from bottom to top
         let mut current_key = key;
         let mut current_node = node;
+        println!("=== for height in 0..=core::u8::MAX {{ ===");
         for height in 0..=core::u8::MAX {
+            println_if!(height <= 5, "{:width$}=== loop at height {} ===", " ", height, width=4);
+            println_if!(height <= 5, "{:width$}current_key = {}", " ", current_key, width=4);
+            println_if!(height <= 5, "{:width$}current_node = {}", " ", current_node, width=4);
+
             let parent_key = current_key.parent_path(height);
             let parent_branch_key = BranchKey::new(height, parent_key);
+
+            println_if!(height <= 5, "{:width$}parent_key = {}", " ", parent_key, width=4);
+            println_if!(height <= 5, "{:width$}parent_branch_key = {}", " ", parent_branch_key, width=4);
+
             let (left, right) =
                 if let Some(parent_branch) = self.store.get_branch(&parent_branch_key)? {
                     if current_key.is_right(height) {
+                        println_if!(height <= 5, "{:width$}current_key is right", " ", width=4);
                         (parent_branch.left, current_node)
                     } else {
+                        println_if!(height <= 5, "{:width$}current_key is left", " ", width=4);
                         (current_node, parent_branch.right)
                     }
                 } else if current_key.is_right(height) {
+                    println_if!(height <= 5, "{:width$}current_key is right, left is zero", " ", width=4);
                     (MergeValue::zero(), current_node)
                 } else {
+                    println_if!(height <= 5, "{:width$}current_key is left, right is zero", " ", width=4);
                     (current_node, MergeValue::zero())
                 };
 
+            println_if!(height <= 5, "{:width$}left = {}", " ", left, width=4);
+            println_if!(height <= 5, "{:width$}right = {}", " ", right, width=4);
+
             if !left.is_zero() || !right.is_zero() {
+                println_if!(height <= 5, "{:width$}left or right is not zero, insert BranchNode", " ", width=4);
+
                 // insert or update branch
                 self.store.insert_branch(
                     parent_branch_key,
@@ -127,6 +154,8 @@ impl<H: Hasher + Default, V: Value, S: Store<V>> SparseMerkleTree<H, V, S> {
                     },
                 )?;
             } else {
+                println_if!(height <= 5, "{:width$}left and right is zero, remove BranchNode", " ", width=4);
+
                 // remove empty branch
                 self.store.remove_branch(&parent_branch_key)?;
             }
@@ -134,6 +163,7 @@ impl<H: Hasher + Default, V: Value, S: Store<V>> SparseMerkleTree<H, V, S> {
             current_key = parent_key;
             current_node = merge::<H>(height, &parent_key, &left, &right);
         }
+        println!("=== }} ===");
 
         self.root = current_node.hash::<H>();
         Ok(&self.root)
