@@ -4,6 +4,7 @@ use crate::{
     traits::Hasher,
     vec::Vec,
     H256, MAX_STACK_SIZE,
+    println_if,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -102,18 +102,23 @@ fn insert_four_leaf() {
 fn merkle_proof_00() {
     let mut tree = SMT::default();
 
-    let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
-    let value: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-    tree.update(key, value);
-    let key: H256 = H256::from(hex_to_hash("0100000000000000000000000000000000000000000000000000000000000000"));
-    let value: H256 = H256::from(hex_to_hash("11ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-    tree.update(key, value);
-    let key: H256 = H256::from(hex_to_hash("0300000000000000000000000000000000000000000000000000000000000000"));
-    let value: H256 = H256::from(hex_to_hash("33ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-    tree.update(key, value);
+    let key_1: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
+    let value_1: H256 = H256::from(hex_to_hash("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key_1, value_1);
+    let key_2: H256 = H256::from(hex_to_hash("0100000000000000000000000000000000000000000000000000000000000000"));
+    let value_2: H256 = H256::from(hex_to_hash("11ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key_2, value_2);
+    let key_3: H256 = H256::from(hex_to_hash("0300000000000000000000000000000000000000000000000000000000000000"));
+    let value_3: H256 = H256::from(hex_to_hash("33ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    tree.update(key_3, value_3);
 
     let key: H256 = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000000"));
-    tree.merkle_proof(vec![key]);
+    let proof = tree.merkle_proof(vec![key]).unwrap();
+
+    proof.compile(vec![(key_3, value_3)]).unwrap();
+
+    // let key_4: H256 = H256::from(hex_to_hash("0400000000000000000000000000000000000000000000000000000000000000"));
+    // proof.compile(vec![(key_4, H256::zero())]).unwrap();
 
     // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
 }
