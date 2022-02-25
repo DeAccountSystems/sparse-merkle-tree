@@ -1,6 +1,6 @@
 use crate::*;
 use crate::{
-    blake2b::Blake2bHasher, default_store::DefaultStore, SparseMerkleTree,
+    blake2b::Blake2bHasher, default_store::DefaultStore, SparseMerkleTree, merge::{MergeValue, merge}
 };
 
 type SMT = SparseMerkleTree<Blake2bHasher, H256, DefaultStore<H256>>;
@@ -136,6 +136,17 @@ fn merkle_proof_03() {
     tree.merkle_proof(vec![key]);
 
     // let proof = tree.merkle_proof(vec![new_key.clone()]).unwrap();
+}
+
+#[test]
+fn print_merge() {
+    let height = 0;
+    let node_key = H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000001"));
+    let lhs = MergeValue::Value(H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000002")));
+    let rhs = MergeValue::Value(H256::from(hex_to_hash("0000000000000000000000000000000000000000000000000000000000000003")));
+
+    let ret = merge::<Blake2bHasher>(height, &node_key, &lhs, &rhs);
+    println!("return: {}", ret);
 }
 
 #[test]
